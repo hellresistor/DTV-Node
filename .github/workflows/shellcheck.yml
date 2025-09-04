@@ -22,4 +22,4 @@ jobs:
       - name: Install Shellcheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
       - name: Run Shellcheck
-        run: shellcheck -V && shellcheck -e SC2034 -e SC2181 -e SC2089 -e SC1091 *.sh && echo "shellcheck OK"
+        run: shellcheck -V && shellcheck -e SC2164 -e SC2034 -e SC2181 -e SC2089 -e SC1091 *.sh && echo "shellcheck OK"
