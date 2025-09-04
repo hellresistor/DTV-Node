@@ -42,5 +42,8 @@ btcpayserver.sh - on dev..
 publicpool.sh - on dev..
 
 
-## Useful?
-Send some bitcoin to  hellresistor@medusa.bz  Lightning address.
+## Tested
+ - Debian 12 (Bookworm)
+
+
+### ⚡ Donate via Lightning: hellresistor@medusa.bz
