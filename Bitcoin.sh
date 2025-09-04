@@ -18,7 +18,7 @@ function BitcoinZone() {
   aviso "O diretório $PASTABITCOIN já existe."
  fi
  sudo chown "$DEFAULT_BITCOIN_USER":"$DEFAULT_BITCOIN_GROUP" "$PASTABITCOIN"
- cd "$THISTEMPFOLDER"
+ cd "$THISTEMPFOLDER" | erro "$THISTEMPFOLDER Inexistente"
  if [[ "$COREORKNOTS" == "core" ]]; then
   BTCVERSAO=$(curl --silent "https://api.github.com/repos/bitcoin/bitcoin/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")' | sed 's/^v//')
   #BTCVERSAO="28.0"
@@ -50,9 +50,17 @@ function BitcoinZone() {
  else
   erro "PROBLEMA A VERIFICAR A CHAVE SHA256"
  fi
- sleep 2
- curl -s "$REPBUILDKEYS" |  grep download_url | grep -oE "https://[a-zA-Z0-9./-]+" | while read url; do OUTPUT=$(curl -s "$url" | gpg --import 2>&1); if echo "$OUTPUT" | grep -q "imported"; then echo "$OUTPUT"; echo "OK!"; else echo "Detalhes do erro: $OUTPUT"; read -n 1 -s -r -p "Clique qualquer tecla para continuar..."; fi; done
- sleep 2
+ 
+ while read -r url; do
+  OUTPUT=$(curl -s "$url" | gpg --import 2>&1)
+  if echo "$OUTPUT" | grep -q "imported"; then
+   echo "$OUTPUT"
+   echo "OK!"
+  else
+   echo "Detalhes do erro: $OUTPUT"
+   read -n 1 -s -r -p "Clique qualquer tecla para continuar..."
+  fi
+ done < <(curl -s "$REPBUILDKEYS" | grep download_url | grep -oE "https://[a-zA-Z0-9./-]+")
  
  if gpg --verify SHA256SUMS.asc 2>&1 | grep -q "Good signature from"; then
   echo "Assinatura SHA256SUMS.asc válida!"
@@ -62,7 +70,7 @@ function BitcoinZone() {
   
  # Instalar bitcoind
  tar -xvf "$BTCREPFILE"
- sudo install -m 0755 -o root -g root -t /usr/local/bin bitcoin-$BTCVERSAO/bin/*
+ sudo install -m 0755 -o root -g root -t /usr/local/bin bitcoin-"$BTCVERSAO"/bin/*
  
  # Gerar serviço bitcoin core
  info "A Gerar o arquivo de servico bitcoind.service ..."
@@ -124,7 +132,7 @@ EOF
 function ConfigurarBitcoin(){
  clear
  . banner/BTC
- cd "${HOME_BITCOIN_USER}"
+ cd "${HOME_BITCOIN_USER}" | erro "${HOME_BITCOIN_USER} Inexistente"
  ln -s "$PASTABITCOIN" "${HOME_BITCOIN_USER}/.bitcoin"
  DetectarRede
  info "A criar ficheiro bitcoin.conf ..."
@@ -248,7 +256,7 @@ function ConfigBitcoinFinal() {
  fi
  if grep -q '^[^#]*blocksonly=' "${HOME_BITCOIN_USER}/.bitcoin/bitcoin.conf"; then
   sed -i '/blocksonly=/s/^/#/' "${HOME_BITCOIN_USER}/.bitcoin/bitcoin.conf"
-  echo "Linha 'blocksonly=' foi comentada."
+  ok "Linha 'blocksonly=' foi comentada."
  fi
  if grep -q "^assumevalid=" "${HOME_BITCOIN_USER}/.bitcoin/bitcoin.conf" ; then
   sed -i '/^'"assumevalid="'/s/^/#/' "${HOME_BITCOIN_USER}/.bitcoin/bitcoin.conf"
@@ -272,31 +280,38 @@ function ConfigurarTorBitcoin() {
 ############################################################################################
 ### Trabalhar em source mais tarde para filtro ordinals (Ordispector. Maybe Knots filter?###
 function DownloadBitcoinSource(){
- cd $THISTEMPFOLDER
+ cd "$THISTEMPFOLDER" | erro "Inexistente $THISTEMPFOLDER"
  sudo apt install autoconf automake build-essential libboost-filesystem-dev libboost-system-dev libboost-thread-dev libevent-dev libsqlite3-dev libtool pkg-config libzmq3-dev --no-install-recommends
- wget https://bitcoincore.org/bin/bitcoin-core-$BTCVERSAO/bitcoin-$BTCVERSAO.tar.gz
- wget https://bitcoincore.org/bin/bitcoin-core-$BTCVERSAO/SHA256SUMS
- wget https://bitcoincore.org/bin/bitcoin-core-$BTCVERSAO/SHA256SUMS.asc
- wget https://bitcoincore.org/bin/bitcoin-core-$BTCVERSAO/SHA256SUMS.ots
+ wget "https://bitcoincore.org/bin/bitcoin-core-$BTCVERSAO/bitcoin-$BTCVERSAO.tar.gz"
+ wget "https://bitcoincore.org/bin/bitcoin-core-$BTCVERSAO/SHA256SUMS"
+ wget "https://bitcoincore.org/bin/bitcoin-core-$BTCVERSAO/SHA256SUMS.asc"
+ wget "https://bitcoincore.org/bin/bitcoin-core-$BTCVERSAO/SHA256SUMS.ots"
  if sha256sum --ignore-missing --check SHA256SUMS | grep -q ": OK"; then
-  echo "Verificação SHA256 bem-sucedida."
+  ok "Verificação SHA256 bem-sucedida."
  else
   erro "PROBLEMA A VERIFICAR A CHAVE SHA256 DE bitcoin-core-$BTCVERSAO/bitcoin-$BTCVERSAO.tar.gz"
  fi
- sleep 2
- curl -s "https://api.github.com/repositories/355107265/contents/builder-keys" |  grep download_url | grep -oE "https://[a-zA-Z0-9./-]+" | while read url; do OUTPUT=$(curl -s "$url" | gpg --import 2>&1); if echo "$OUTPUT" | grep -q "imported"; then echo "$OUTPUT"; echo "OK!"; else echo "Detalhes do erro: $OUTPUT"; read -n 1 -s -r -p "Clique qualquer tecla para continuar..."; fi; done
- sleep 2
+ while read -r url; do
+  OUTPUT=$(curl -s "$url" | gpg --import 2>&1)
+  if echo "$OUTPUT" | grep -q "imported"; then
+   echo "$OUTPUT"
+   echo "OK!"
+  else
+   echo "Detalhes do erro: $OUTPUT"
+   read -n 1 -s -r -p "Clique qualquer tecla para continuar..."
+  fi
+ done < <(curl -s "$REPBUILDKEYS" | grep download_url | grep -oE "https://[a-zA-Z0-9./-]+")
  if gpg --verify SHA256SUMS.asc 2>&1 | grep -q "Good signature from"; then
-  echo "Assinatura bitcoin SHA256SUMS.asc válida."
+  ok "Assinatura bitcoin SHA256SUMS.asc válida."
  else
-  echo "Assinatura inválida. O script será interrompido."
+  erro "Assinatura inválida. O script será interrompido."
  fi
  ### Descompactar bitcoind ###
- tar -xvf bitcoin-$BTCVERSAO.tar.gz
+ tar -xvf "bitcoin-$BTCVERSAO.tar.gz"
  wget -O bdb.sh https://raw.githubusercontent.com/bitcoin/bitcoin/aef8b4f43b0c4300aa6cf2c5cf5c19f55e73499c/contrib/install_db4.sh
  chmod +x bdb.sh
- ./bdb.sh bitcoin-$BTCVERSAO
- cd bitcoin-$BTCVERSAO
+ ./bdb.sh "bitcoin-$BTCVERSAO"
+ cd "bitcoin-$BTCVERSAO"
  ./autogen.sh
  export BDB_PREFIX="$THISTEMPFOLDER/bitcoin-$BTCVERSAO/db4"
  ./configure \
@@ -307,15 +322,14 @@ function DownloadBitcoinSource(){
   --with-gui=no
 }
 function AplicarOrdispector() {
- cd $THISTEMPFOLDER
- cd bitcoin-$BTCVERSAO
+ cd "$THISTEMPFOLDER/bitcoin-$BTCVERSAO"
  wget https://github.com/minibolt-guide/ramix-node/blob/main/resources/ordisrespector.patch
  cat ordisrespector.patch
  aviso "Dá uma olhada no codigo..."
  sleep 5
  info "Aplicar git ordisrespector patch..."
  git apply ordisrespector.patch || erro "Problema a aplicar patch ordisrespector!"
- make -j$(nproc)
+ make -j"$(nproc)"
  sudo make install
 }
 ############################################################################################
