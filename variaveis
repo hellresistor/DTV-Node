@@ -1,0 +1,141 @@
+#!/bin/bash
+export DEBIAN_FRONTEND=noninteractive
+MEUNODENAME="HellNodeSuppBTC"
+COREORKNOTS="core" # core | knots
+MAINORTESTNET="testnet4" # mainnet | testnet4
+BTCRPCUSERNAME="DontTrustVerify"
+BTCRPCAUTHMETOD="password" # cookie | password
+USETOR="1" # Set 1 To use TOR connection
+NODEJSVERSAO="20.x"
+POSTGRESVERSAO="17"
+SDKVERSION="8.0"
+
+ if [[ "$MAINORTESTNET" == "testnet4" ]]; then
+  SETTESTNET="-$MAINORTESTNET"
+#  ok "Bitcoin em Testnet4 !"
+ elif [[ "$MAINORTESTNET" == "mainnet" ]]; then
+#  ok "Bitcoin em Mainnet !"
+  echo ""
+ else 
+  erro "Variável MAINORTESTNET incorrecta!"
+ fi
+
+# Variaveis de sistema
+THISMAINFOLDER="/opt/DTV-Node"
+THISTEMPFOLDER="/tmp"
+PASTADATA="/data"
+THISBCKPFOLDER="$THISMAINFOLDER/BackupPLEBnode"
+PASTABITCOIN="${PASTADATA}/bitcoin"
+PASTAFULCRUM="${PASTADATA}/fulcrum"
+PASTABTCRPCEXPLORER="${PASTADATA}/btcrpcexplorer"
+PASTALND="${PASTADATA}/lnd"
+PASTALNDG="${PASTADATA}/lndg"
+PASTABTCPAY="${PASTADATA}/btcpay"
+PASTANOSTR="${PASTADATA}/nostr-relay"
+PASTAPUBLICPOOL="${PASTADATA}/publicpool"
+DEFAULT_ADMIN_USER="admin"
+DEFAULT_ADMIN_GROUP="admin"
+DEFAULT_BITCOIN_USER="bitcoin"
+DEFAULT_BITCOIN_GROUP="bitcoin"
+DEFAULT_FULCRUM_USER="fulcrum"
+DEFAULT_FULCRUM_GROUP="fulcrum"
+DEFAULT_BTCRPCEXPLORER_USER="btcrpcexplorer"
+DEFAULT_BTCRPCEXPLORER_GROUP="btcrpcexplorer"
+DEFAULT_MEMPOOL_USER="mempool"
+DEFAULT_MEMPOOL_GROUP="mempool"
+DEFAULT_LND_USER="lnd"
+DEFAULT_LND_GROUP="lnd"
+DEFAULT_LNDG_USER="lndg"
+DEFAULT_LNDG_GROUP="lndg"
+DEFAULT_TOR_USER="debian-tor"
+DEFAULT_TOR_GROUP="debian-tor"
+DEFAULT_POSTGRES_USER="postgres"
+DEFAULT_BTCPAY_USER="btcpay"
+DEFAULT_BTCPAY_GROUP="btcpay"
+DEFAULT_TORGUARD_USER="_tor-guardmidrelay"
+DEFAULT_TORGUARD_GROUP="_tor-guardmidrelay"
+DEFAULT_NOSTR_USER="nostr"
+DEFAULT_NOSTR_GROUP="nostr"
+DEFAULT_PUBLICPOOL_USER="publicpool"
+DEFAULT_PUBLICPOOL_GROUP="publicpool"
+DEFAULT_CKPOOL_USER="ckpool"
+DEFAULT_CKPOOL_GROUP="ckpool"
+HOME_ADMIN_USER="/home/${DEFAULT_ADMIN_USER}"
+HOME_BITCOIN_USER="/home/${DEFAULT_BITCOIN_USER}"
+HOME_FULCRUM_USER="/home/${DEFAULT_FULCRUM_USER}"
+HOME_BTCRPCEXPLORER_USER="/home/${DEFAULT_BTCRPCEXPLORER_USER}"
+HOME_MEMPOOL_USER="/home/${DEFAULT_MEMPOOL_USER}"
+HOME_LND_USER="/home/${DEFAULT_LND_USER}"
+HOME_LNDG_USER="/home/${DEFAULT_LNDG_USER}"
+HOME_BTCPAY_USER="/home/${DEFAULT_BTCPAY_USER}"
+HOME_NOSTR_USER="/home/${DEFAULT_NOSTR_USER}"
+HOME_PUBLICPOOL_USER="/home/${DEFAULT_PUBLICPOOL_USER}"
+HOME_CKPOOL_USER="/home/${DEFAULT_CKPOOL_USER}"
+
+if [[ "$MAINORTESTNET" == "testnet4" ]]; then
+ DEFAULT_BITCOIN_PORT=48333
+ DEFAULT_BITCOINRPC_PORT=48332
+ DEFAULT_BTCTOR_PORT=48334
+ DEFAULT_FULCRUMSSL_PORT=51002
+ DEFAULT_FULCRUMTCP_PORT=51001
+elif [[ "$MAINORTESTNET" == "mainnet" ]]; then
+ DEFAULT_BITCOIN_PORT=8333
+ DEFAULT_BITCOINRPC_PORT=8332
+ DEFAULT_BTCTOR_PORT=8334
+ DEFAULT_FULCRUMSSL_PORT=50002
+ DEFAULT_FULCRUMTCP_PORT=50001
+else
+ erro "Variavel MAINORTESTNET Inválida! $MAINORTESTNET"
+fi
+
+DEFAULT_SSH_PORT=22
+DEFAULT_TORBRIDGE_PORT=9050 # Deve ser alterada
+DEFAULT_OBFS4_PORT=2021
+DEFAULT_BTCRPCEXPLORER_PORT=4000
+DEFAULT_MEMPOOL_PORT=4081
+DEFAULT_MEMPOOLHTTPS_PORT=4081
+DEFAULT_MEMPOOLHTTP_PORT=4080
+DEFAULT_FULCRUMADMIN_PORT=8000
+DEFAULT_FULCRUMZMQPUBHASHBLOCK_PORT=8433
+DEFAULT_FULCRUMZMQPUBHASHTX_PORT=9332
+DEFAULT_LNDG_PORT=8889
+DEFAULT_WATCHTOWERCLIENT_PORT=9911
+DEFAULT_TORGUARDRELAY_PORT=9001
+DEFAULT_TOROBFSCONTROL_PORT=9052
+DEFAULT_TORGUARDRELAYCONTROL_PORT=9053
+DEFAULT_BTCPAY_PORT=23000
+DEFAULT_MYSQL_PORT=3306
+DEFAULT_POSTGRES_PORT=5432
+DEFAULT_NOSTR_PORT=8080
+DEFAULT_PUBLICPOOLAPI_PORT=3334
+DEFAULT_PUBLICPOOLSTRATUM_PORT=3333
+DEFAULT_PUBLICPOOLUI_PORT=3335
+DEFAULT_CKPOOLSTRATUM_PORT=3333
+DEFAULT_CKPOOLZMQ_PORT=28332
+
+# Obter Versões
+#LNDVERSAO=$(curl --silent "https://api.github.com/repos/lightningnetwork/lnd/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')
+#LNDGVERSAO=$(curl --silent "https://api.github.com/repos/cryptosharks131/lndg/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')
+#CLOUDFLAREVERSAO=$(curl --silent "https://api.github.com/repos/cloudflare/cloudflared/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')
+#NBXPLORERVERSAO=$(curl --silent "https://api.github.com/repos/dgarage/NBXplorer/tags" | grep -Po '"name": "\K.*?(?=")' | head -n 1)
+#BTCPAYSERVERVERSAO=$(curl --silent "https://api.github.com/repos/btcpayserver/btcpayserver/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")' | sed 's/^v//')
+#NOSTRRELAYVERSAO=$(curl --silent "https://api.github.com/repos/scsibug/nostr-rs-relay/tags" | grep -Po '"name": "\K.*?(?=")' | head -n 1)
+
+# Colorificar
+final=$'\e[0m'
+verde=$'\e[92m'
+azul=$'\e[94m'
+azulclaro="\e[38;5;123m"
+vermelho=$'\e[91m'
+amarelo=$'\e[93m'
+laranja=$'\e[38;2;255;165;0m'
+verdedark=$'\e[38;2;0;100;0m'
+branco=$'\e[38;2;255;255;255m'
+preto=$'\e[38;2;0;0;0;48;2;255;255;255m'
+roxo=$'\e[38;2;128;0;128m'
+
+# Logs Colorificados ^^
+function ok { printf "${verde}[OK] $* ${final}\n"; sleep 0.5; }
+function erro { printf "${vermelho}[ERRO] $* ${final}\n"; exit 1; }
+function aviso { printf "${amarelo}[AVISO] $* ${final}\n"; sleep 0.75; }
+function info { printf "${azul}[INFO] $* ${final}\n"; sleep 0.5; }

@@ -1,0 +1,470 @@
+#!/bin/bash
+#--------------------------------------------#
+#          Sistema de Funcoes V0.3.0         #
+#--------------------------------------------#
+
+# Funcao sincronizacao xpto^^
+function SincronizeShowOff { printf "${vermelho}      __   __     _____   ______ \n${vermelho}     /__/\/__/\  /_____/\/_____/\ \n${vermelho}     \  \ \\${verde}: ${vermelho}\ \_\\${verde}:::${vermelho}_${verde}:${vermelho}\ \\${verde}:::${vermelho}_ \ \ \n${vermelho}      \\${verde}::${vermelho}\_\\${verde}::${vermelho}\/_/\  _\\${verde}:${vermelho}\|\\${verde}:${vermelho}\ \ \ \ \n${vermelho}       \_${verde}:::   ${vermelho}__\/ /${verde}::${vermelho}_/__\\${verde}:${vermelho}\ \ \ \   \n${vermelho}            \\${verde}::${vermelho}\ \  \\${verde}:${vermelho}\____/\\${verde}:${vermelho}\_\ \ \  \n${vermelho}             \__\/   \_____\/\_____\/\n${verde}     T I M E${final} \n "; }
+
+# Funcao para verificar e instalar pacotes
+function CheckInstalarPacotes() {
+ sudo apt-get -y update > /dev/null 2>&1
+ for pacote in "$@"; do
+  if command -v "$pacote" > /dev/null 2>&1; then
+   ok "Pacote $pacote já instalado"
+  else
+   if sudo apt -y install "$pacote" > /dev/null 2>&1; then
+    info "A instalar pacote $pacote ..."
+   else
+    aviso "Impossível instalar o pacote: $pacote" >&2
+   fi
+  fi
+ done
+}
+
+# Funcao para detectar e criar ustilizadores
+function DetectarCriarUtilizadores() {
+ local UTILIZADOR=$1
+ if sudo id "$UTILIZADOR" > /dev/null 2>&1; then
+  info "Utilizador $UTILIZADOR existente"
+ else
+  sudo adduser --gecos "" --disabled-password "$UTILIZADOR"
+  ok "Utilizador $UTILIZADOR criado"
+ fi
+}
+
+# Funcao Adicionar disco ao fstab
+function AdicionarUuidAoFstab() {
+  local PARTICAO_ESCOLHIDA="$1"
+  info "A adicionar $PARTICAO_ESCOLHIDA ao ficheiro fstab .."
+
+  local UUIDDISCO
+  UUIDDISCO=$(lsblk -no UUID "/dev/$PARTICAO_ESCOLHIDA" 2>/dev/null)
+  if [[ -z "$UUIDDISCO" ]]; then
+    erro "UUID da partição $PARTICAO_ESCOLHIDA não encontrado! Abortado."
+    return 1
+  fi
+
+  # se já existir UUID OU ponto de montagem no fstab → remove
+  if grep -q "[[:space:]]$PASTADATA[[:space:]]" /etc/fstab || grep -q "UUID=$UUIDDISCO" /etc/fstab; then
+    aviso "Entrada antiga encontrada no fstab (UUID ou PASTADATA). A remover."
+    sudo sed -i "\|UUID=$UUIDDISCO|d;\|[[:space:]]$PASTADATA[[:space:]]|d" /etc/fstab
+  fi
+
+  # adiciona a entrada correta
+  echo "UUID=$UUIDDISCO $PASTADATA ext4 rw,nosuid,dev,noexec,noatime,nodiratime,auto,nouser,async,nofail 0 2" \
+    | sudo tee -a /etc/fstab > /dev/null
+
+  ok "Disco $PARTICAO_ESCOLHIDA adicionado ao fstab com sucesso"
+}
+
+# Função para confirmação (sim/não) com mensagem e retorno 0 para sim, 1 para não
+function confirmar() {
+  local prompt="${1:-Tem a certeza? (S/N): }"
+  local resposta
+  while true; do
+    read -rp "$prompt" resposta
+    resposta="${resposta,,}"  # para lowercase
+    case "$resposta" in
+      s|S) return 0 ;;
+      n|N) return 1 ;;
+      *) aviso "Por favor, responda S ou N." ;;
+    esac
+  done
+}
+
+# Funcao Questao se X servico acede por TOR 
+function ConfigurarAcessoTorORIGINAL() {
+ VerificarServico "tor"
+ local hidden_service_dir=$1
+ local hidden_service_port=$2
+ while true; do
+  read -p "Deseja configurar acesso via TOR? (Sim/Nao)" ESCOLHAACESSOTOR
+  if [ "$ESCOLHAACESSOTOR" = "S" ] || [ "$ESCOLHAACESSOTOR" = "s" ]; then
+   echo "# Hidden Service Configuration for $hidden_service_dir
+HiddenServiceDir $hidden_service_dir
+HiddenServiceVersion 3
+HiddenServicePoWDefensesEnabled 1
+HiddenServicePort $hidden_service_port 127.0.0.1:$hidden_service_port" | sudo tee -a /etc/tor/torrc
+   ReiniciarServico "tor"
+   BackupInformacao "## TOR Hostname ##"
+   BackupInformacao "$hidden_service_dir/hostname"
+   ok "Configuracao acesso tor com sucesso."
+   break
+  elif [ "$ESCOLHAACESSOTOR" = "N" ] || [ "$ESCOLHAACESSOTOR" = "n" ]; then
+   aviso "Acesso Tor nao configurado"
+   break
+  else
+   aviso "Opcao $ESCOLHAACESSOTOR inválida. Escolha a correta!"
+  fi
+ done
+}
+
+function ConfigurarAcessoTor() {
+ VerificarServico "tor"
+ local hidden_service_dir=$1
+ local hidden_service_port=$2
+ while true; do
+  read -p "Deseja configurar acesso via TOR? (Sim/Nao) " ESCOLHAACESSOTOR
+  case "$ESCOLHAACESSOTOR" in
+   [Ss]*)
+        if grep -q "HiddenServiceDir $hidden_service_dir" /etc/tor/torrc; then
+         aviso "O serviço TOR já está configurado para o diretório $hidden_service_dir. Adicionando porta, se necessário..."
+         if grep -q "HiddenServicePoWDefensesEnabled 1" /etc/tor/torrc; then
+          sudo sed -i "/HiddenServicePoWDefensesEnabled 1/a HiddenServicePort $hidden_service_port 127.0.0.1:$hidden_service_port" /etc/tor/torrc
+          ok "Porta adicionada com sucesso ao serviço TOR existente."
+         else
+          erro "Linha 'HiddenServicePoWDefensesEnabled 1' não encontrada no arquivo torrc. Verifique o arquivo manualmente."
+         fi
+        else
+         # Adiciona toda a configuração se o diretório ainda não existir
+         echo "# Hidden Service Configuration for ${hidden_service_dir}/
+HiddenServiceDir ${hidden_service_dir}/
+HiddenServiceVersion 3
+HiddenServicePoWDefensesEnabled 1
+HiddenServicePort $hidden_service_port 127.0.0.1:$hidden_service_port" | sudo tee -a /etc/tor/torrc
+         ok "Configuração completa adicionada com sucesso ao arquivo torrc."
+        fi
+        ReiniciarServico "tor"
+        BackupInformacao "## TOR Hostname ##"
+        BackupInformacao "$hidden_service_dir/hostname"
+        BackupInformacao "$hidden_service_port"
+        ok "Configuração de acesso via TOR concluída com sucesso."
+        break ;;
+   [Nn]*)
+        aviso "Acesso TOR não configurado."
+        break ;;
+   *) aviso "Opção $ESCOLHAACESSOTOR inválida. Escolha Sim (S) ou Não (N)!" ;;
+  esac
+ done
+}
+
+# Funcao Verificacao da configuracao nginx proxy
+function VerificarNginx() {
+ if sudo nginx -t 2>&1 | grep -q "test is successful"; then
+  ok "nginx Passou no teste"
+  ReiniciarServico "nginx"
+ else
+  erro "Problema com a configuracao nginx. Verifique Manualmente"
+ fi
+}
+
+# Funcao para ir buscar as variaveis geradas em screen para uso mais tardio
+function BuscarScreenVars() {
+ if [ -f "$THISTEMPFOLDER/screen_env_vars" ]; then
+  source "$THISTEMPFOLDER/screen_env_vars"
+  info "Variáveis carregadas da sessão 'screen'."
+###  rm "$THISTEMPFOLDER/screen_env_vars"
+ else
+  aviso "O arquivo de variáveis $THISTEMPFOLDER/screen_env_vars não foi encontrado."
+ fi
+}
+
+# Funcao Questionario Passwords (A|B|C|D|E)
+function DefinirPassword() {
+ NomeVARIAVELObtida=$1
+ local PROMPTDESCRICAO=$2
+ local DEFENIRPASSWORD="dummy1"
+ local CONFIRMACAOPASSWORD="dummy2"
+ while [[ "$DEFENIRPASSWORD" != "$CONFIRMACAOPASSWORD" ]]; do
+  read -rsp "$PROMPTDESCRICAO (+8 caracteres): " DEFENIRPASSWORD
+  echo
+  while [ "${#DEFENIRPASSWORD}" -lt 8 ]; do
+   echo "[AVISO] Coloca mais caracteres, no mínimo 8."
+   read -rsp "$PROMPTDESCRICAO (+8 caracteres): " DEFENIRPASSWORD
+   echo
+  done
+  read -rsp "Repete a Password: " CONFIRMACAOPASSWORD
+  echo
+ done
+ echo "export $NomeVARIAVELObtida='$DEFENIRPASSWORD'" >> $THISTEMPFOLDER/screen_env_vars
+ BackupInformacao " ### PASSWORD Respectiva ### "
+ BackupInformacao "$NomeVARIAVELObtida='$DEFENIRPASSWORD'"
+ chmod 777 $THISTEMPFOLDER/screen_env_vars
+}
+
+# Função para Parar servicos
+function PararServico() {
+ local ServicoAlvo=$1
+ if sudo systemctl is-active --quiet ${ServicoAlvo}.service; then
+  aviso "O serviço ${ServicoAlvo} está em execução. Tentando pará-lo..."
+  if sudo systemctl stop ${ServicoAlvo}.service; then
+   ok "Serviço ${ServicoAlvo} foi parado com sucesso."
+  else
+   erro "Falha ao tentar parar o serviço: ${ServicoAlvo}."
+  fi
+ else
+  info "O serviço ${ServicoAlvo} está parado."
+ fi
+ sleep 3
+}
+
+# Função para Iniciar servicos
+function IniciarServico() {
+ local ServicoAlvo=$1
+ if ! sudo systemctl is-active --quiet ${ServicoAlvo}.service; then
+  aviso "O serviço ${ServicoAlvo} está Paradoo. A Iniciar..."
+  if sudo systemctl start ${ServicoAlvo}.service; then
+   ok "Serviço ${ServicoAlvo} foi Iniciado com sucesso."
+  sleep 10
+  else
+   erro "Falha ao tentar Iniciar o serviço: ${ServicoAlvo}."
+  sleep 10
+  fi
+ else
+  info "O serviço ${ServicoAlvo} já está a correr."
+  sleep 10
+ fi
+ sleep 3
+}
+
+# Função para Reiniciar servicos
+function ReiniciarServico() {
+ local ServicoAlvo=$1
+ if sudo systemctl is-active --quiet ${ServicoAlvo}.service; then
+  aviso "O serviço ${ServicoAlvo} está em execução. A Reiniciar..."
+  if sudo systemctl restart  ${ServicoAlvo}.service; then
+   ok "Serviço ${ServicoAlvo} foi reiniciado com sucesso."
+   sleep 10
+  else
+   erro "Falha ao tentar reiniciar o serviço: ${ServicoAlvo}."
+  fi
+ else
+  info "O serviço ${ServicoAlvo} está parado. A iniciar..."
+  IniciarServico "$ServicoAlvo"
+  sleep 10
+ fi
+ sleep 3
+}
+
+# Função para verificar existencia de serviço
+function VerificarServico() {
+  local ServicoAlvo=$1
+  if sudo systemctl list-units --type=service --all | grep -q "${ServicoAlvo}.service"; then
+    ok "O serviço ${ServicoAlvo} existe no sistema."
+  else
+    erro "O serviço ${ServicoAlvo} não existe no sistema. Deverá instala-lo"
+  fi
+}
+
+# Função para habilitar serviço
+function HabilitarServico() {
+ local ServicoAlvo=$1
+ sudo systemctl daemon-reload
+ if ! sudo systemctl is-enabled --quiet ${ServicoAlvo}.service ; then
+  if ! sudo systemctl enable ${ServicoAlvo} ; then
+   erro "Falha ao habilitar o serviço: ${ServicoAlvo}."
+  fi
+  ok "O serviço ${ServicoAlvo} foi habilitado com sucesso."
+ else
+  info "O serviço ${ServicoAlvo} já está habilitado."
+ fi
+}
+
+# Função para Desabilitar serviço
+function DesabilitarServico() {
+ local ServicoAlvo=$1
+ if sudo systemctl is-enabled --quiet ${ServicoAlvo}.service ; then
+  if sudo systemctl disable ${ServicoAlvo} ; then
+   erro "Falha ao Desabilitar o serviço: ${ServicoAlvo}."
+  fi
+  ok "O serviço ${ServicoAlvo} foi Desabilitado com sucesso."
+ else
+  info "O serviço ${ServicoAlvo} já está Desabilitado."
+ fi
+}
+
+# Zona de Verificacao de Ligacoes/conexoes
+function SistemaVerificarLigacoes() {
+ local SERVICORECEBIDO=$1
+ while true; do
+  if [ "$SERVICORECEBIDO" == "bitcoind" ] ; then
+   VERIFICALIGACOES=$(bitcoin-cli $SETTESTNET getnetworkinfo | jq .connections)
+   echo "Verificar as ligacoes var: $VERIFICALIGACOES"
+  elif [ "$SERVICORECEBIDO" == "lnd" ] ; then
+   VERIFICALIGACOES=$(lnd-cli getnetworkinfo | jq .connections)
+   echo "Verificar as ligacoes var: $VERIFICALIGACOES"
+   aviso "Em desenvolvimento..."
+  else
+   erro "Algum problema no sistema de Ligacoes"
+  fi
+  if [[ "$VERIFICALIGACOES" -ge 2 ]]; then
+   ok "Existem pelo menos 2 ligacoes. Continuando..."
+   sleep 1
+   break
+  else
+   aviso "Aguardando mais ligacoes. Atualmente, há $VERIFICALIGACOES ligacoes..."
+   sleep 5
+  fi
+ done
+}
+
+### Zona de Sincronização
+function SistemaSincronizacao() { 
+local SERVICORECEBIDO=$1
+ if [ "$SERVICORECEBIDO" == "fulcrum" ] ; then
+  while true; do
+   clear
+   . banner/FULCRUM
+   SincronizeShowOff
+   local SERVICORECEBIDONOME="Fulcrum"
+   FULCRUMSYNCPERCENT=$(journalctl -u fulcrum --no-pager -n 1000 | grep -oP '\d+\.\d+(?=%)' | tail -n 1)
+   if [[ -n "$FULCRUMSYNCPERCENT" ]]; then
+    aviso "Sincronização em andamento: ${FULCRUMSYNCPERCENT}%"
+    if (( $(echo "$FULCRUMSYNCPERCENT >= 99" | bc -l) )); then
+     ok "Sincronização concluída! Fulcrum está pronto."
+     sleep 20
+     break
+    fi
+   else
+    aviso "Nenhum progresso detectado ainda..."
+   fi
+   sleep 1
+  done
+  elif [ "$SERVICORECEBIDO" == "bitcoind" ] ; then
+   SistemaVerificarLigacoes "$SERVICORECEBIDO"
+   while true; do
+    clear
+    . banner/BTC
+    SincronizeShowOff
+    local SERVICORECEBIDONOME="Bitcoin"
+    local TOTALBLOCOS=$(bitcoin-cli $SETTESTNET getblockchaininfo | jq -r '.blocks')
+    local BLOCOACTUAL=$(bitcoin-cli $SETTESTNET getblockchaininfo | jq -r '.headers')
+    if [ "$TOTALBLOCOS" ] && [ "$BLOCOACTUAL" ]; then
+     local BLOCOSNECESSARIOS=$((BLOCOACTUAL - TOTALBLOCOS))
+     if [[ "$BLOCOSNECESSARIOS" -le 3 ]] ; then
+      ok "!!!!!! $SERVICORECEBIDONOME FULLY SYNCRONIZED Block: $TOTALBLOCOS !!!!!!"
+      break
+     else
+      aviso "$SERVICORECEBIDONOME ainda está a sincronizar..."
+      info "Faltam $BLOCOSNECESSARIOS blocos!"
+      aviso "Por favor, aguarde pacientemente!"
+     fi
+    else
+     aviso "Erro ao obter informações do $SERVICORECEBIDONOME. Verificando Serviço..."
+     IniciarServico "$SERVICORECEBIDO"
+    fi
+    sleep 60
+   done
+  elif [ "$SERVICORECEBIDO" == "lnd" ] ; then
+   local SERVICORECEBIDONOME="lnd"
+   aviso  "ZONA PARA LND. TRABALHAR MAIS TARDE"
+   local TOTALBLOCOS=$(lnd-cli getblockchaininfo | jq -r '.blocks')
+   local BLOCOACTUAL=$(lnd-cli getblockchaininfo | jq -r '.headers')
+  else
+   erro "Algum problema no sistema de Sincronização"
+  fi
+}
+
+# Funcao Backup informacao (passwords, chaves privadas/publicas....)
+function BackupInformacao() {
+ local BACKUPINFO=$1
+ echo "$BACKUPINFO" | tee -a "$THISBCKPFOLDER/PLEB-SalvaComSuaVida.txt"
+}
+
+# Função de sistema Awk para comentar e descomentar linhas d ficheiros de config
+function ComentAwkSys() {
+  local marcador="$1"     # Ex: "# RPC AUTH"
+  local prefixo="$2"      # Ex: "#"
+  local ficheiro="$3"     # Ex: /caminho/para/bitcoin.conf
+  if [[ ! -f "$ficheiro" ]]; then
+    erro "Ficheiro não encontrado: $ficheiro"
+  fi
+  awk -v MARCADOR="$marcador" -v COMENT="$prefixo" '
+  BEGIN { in_section = 0 }
+  {
+    if ($0 ~ "^" MARCADOR "$") {
+      in_section = 1
+      print
+      next
+    }
+
+    if (in_section) {
+      if ($0 ~ /^[ \t]*$/ || ($0 ~ /^#/ && $0 !~ "^" MARCADOR "$")) {
+        in_section = 0
+        print
+        next
+      }
+
+      if ($0 !~ /^[ \t]*#/) {
+        print COMENT $0
+      } else {
+        print
+      }
+
+    } else {
+      print
+    }
+  }' "$ficheiro" > "${ficheiro}.tmp" && mv "${ficheiro}.tmp" "$ficheiro"
+}
+
+# Funcao Verificar sessao SCREEN
+function screenSessionCheck() {
+ local USER_ACTUAL=$1
+ local SESSION_NAME=$2
+ local FUNCTION_NAME=$3
+ local FUNCTION_BODY=$(declare -f "$FUNCTION_NAME")
+ sudo -u "$USER_ACTUAL" screen -D -R "$SESSION_NAME" bash -c "
+. '${THISMAINFOLDER}/variaveis';
+. '${THISMAINFOLDER}/funcbasic';
+$FUNCTION_BODY;
+$FUNCTION_NAME | tee -a '${THISTEMPFOLDER}/${SESSION_NAME}.log';
+printf '\nFunção $FUNCTION_NAME concluída. Pressione Ctrl+A e depois D para desconectar ou Ctrl+C para sair.\n';
+exec bash
+"
+}
+### FECHAR A SESSAO PERMANTENTEMENTE --> sudo -u $USER_ACTUAL screen -S ${PIDscreen}.${SESSION_NAME} -X quit
+
+# Função para iniciar Bitcoin e iniciar a Sincronização
+function StartBitcoinAndSync() {
+ echo "Dentro da funcao start and sync "
+ #HabilitarServico "bitcoind"
+ IniciarServico "bitcoind"
+ aviso "Aguarde! ..."
+ sleep 120
+ aviso "Aguardando o daemon Bitcoin inicializar... $SETTESTNET"
+ while ! sudo -u ${DEFAULT_BITCOIN_USER} bitcoin-cli $SETTESTNET getblockchaininfo > /dev/null 2>&1; do
+  aviso "Daemon Bitcoin a inicializar... $SETTESTNET"
+  sleep 5
+ done
+ SistemaSincronizacao "bitcoind"
+}
+
+### DETEÇÃO DO SISTEMA DE GESTÃO DE REDE ###
+function DetectarRede() {
+  # NetworkManager
+  if command -v nmcli >/dev/null && systemctl is-active --quiet NetworkManager; then
+    GESTOR_REDE="networkmanager"
+    ESTEINTERFACE=$(nmcli -t -f DEVICE,STATE device status | grep ":connected" | cut -d: -f1 | head -n1)
+    ESTECONEXAO=$(nmcli -t -f NAME,DEVICE connection show --active | grep "$ESTEINTERFACE" | cut -d: -f1)
+    ESTEIPINFO=$(nmcli -g IP4.ADDRESS device show "$ESTEINTERFACE" | cut -d/ -f1 | head -n1)
+    ESTENETMASK=$(nmcli -g IP4.ADDRESS device show "$ESTEINTERFACE" | cut -d/ -f2 | head -n1)
+    ESTEGATEWAY=$(nmcli -g IP4.GATEWAY device show "$ESTEINTERFACE" | head -n1)
+    ESTEDNS=$(nmcli -g IP4.DNS device show "$ESTEINTERFACE" | paste -sd "," -)
+    return 0
+  fi
+  # systemd-networkd
+  if systemctl is-active --quiet systemd-networkd; then
+    GESTOR_REDE="networkd"
+    ESTEINTERFACE=$(networkctl | grep -E "ether|wlan" | awk '{print $2}' | head -n1)
+    ESTEIPINFO=$(networkctl status "$ESTEINTERFACE" | grep "Address:" | awk '{print $2}' | cut -d/ -f1)
+    ESTENETMASK=$(networkctl status "$ESTEINTERFACE" | grep "Address:" | awk '{print $2}' | cut -d/ -f2)
+    ESTEGATEWAY=$(ip route | grep default | awk '{print $3}' | head -n1)
+    ESTEDNS=$(systemd-resolve --status | grep "DNS Servers" | awk '{print $3}' | paste -sd "," -)
+    return 0
+  fi
+  # ifupdown
+  if [ -f /etc/network/interfaces ] && grep -q "iface" /etc/network/interfaces; then
+    GESTOR_REDE="ifupdown"
+    ESTEINTERFACE=$(ip -o link show | awk -F': ' '{print $2}' | grep -v lo | head -n1)
+    ESTEIPINFO=$(ip -4 addr show "$ESTEINTERFACE" | grep inet | awk '{print $2}' | cut -d/ -f1)
+    ESTENETMASK=$(ip -4 addr show "$ESTEINTERFACE" | grep inet | awk '{print $2}' | cut -d/ -f2)
+    ESTEGATEWAY=$(ip route | grep default | awk '{print $3}')
+    ESTEDNS=$(grep "nameserver" /etc/resolv.conf | awk '{print $2}' | paste -sd "," -)
+
+    return 0
+  fi
+  # fallback
+  GESTOR_REDE="fallback"
+  return 1
+}

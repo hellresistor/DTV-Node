@@ -1,0 +1,23 @@
+
+printf "
+${branco}            ##############            
+${branco}        ####${preto}++----------++${branco}####        
+${branco}      ###${preto}++----------------++${branco}###      
+${branco}    ###${preto}++++++++++++++++++++++++${branco}###    
+${branco}   #####${preto}+++${branco}###############${preto}+++++++${branco}##   
+${branco}  #####${preto}+++${branco}##########################  
+${branco} #####${preto}++++++--${branco}##################+#### 
+${branco}###${preto}+++++++${branco}#${preto}+--${branco}###${preto}++++++++${branco}#############
+${branco}##${preto}++++++++${branco}#${preto}+++++++++++++++-+${branco}##########
+${branco}##${preto}++++++++${branco}#${preto}+++${branco}########${preto}++++++${branco}##########
+${branco}##${preto}+++${branco}#${preto}+++${branco}##${preto}+++${branco}########${preto}++++++${branco}##########
+${branco}###${preto}+${branco}##${preto}+++${branco}##${preto}+++${branco}########################
+${branco}###${preto}+${branco}##${preto}--+${branco}##${preto}+--${branco}########################
+${branco} #####${preto}+++${branco}##${preto}+++${branco}####################### 
+${branco}  ####${preto}+++${branco}##${preto}+++${branco}######################  
+${branco}   ###${preto}+++${branco}##${preto}+++${branco}#####################   
+${branco}    ####${preto}+${branco}###${preto}++${branco}####################    
+${branco}      #####${preto}+++${branco}##################      
+${branco}        #####${preto}+${branco}################        
+${branco}            ##############            
+${final}\n"

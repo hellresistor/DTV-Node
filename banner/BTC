@@ -1,0 +1,11 @@
+printf "${laranja}
+${laranja}⠀⠀⠀⠀⣿⡇⠀⢸⣿⡇⠀⠀⠀⠀
+${laranja}⠸⠿⣿⣿⣿⡿⠿⠿⣿⣿⣿⣶⣄ ⠀  ${final} 
+${laranja}⠀⠀⢸⣿⣿⡇⠀⠀⠀⠈⣿⣿⣿⠀   ${final}
+${laranja}⠀⠀⢸⣿⣿⡇⠀⠀⢀⣠⣿⣿⠟⠀   ${final}
+${laranja}⠀⠀⢸⣿⣿⡿⠿⠿⠿⣿⣿⣥⣄⠀  ${final}
+${laranja}⠀⠀⢸⣿⣿⡇⠀⠀⠀⠀⢻⣿⣿⣧   ${final}
+${laranja}⠀⠀⢸⣿⣿⡇⠀⠀⠀⠀⣼⣿⣿⣿   ${final}
+${laranja}⢰⣶⣿⣿⣿⣷⣶⣶⣾⣿⣿⠿⠛⠁  ${final}
+${laranja}⠀⠀⠀⠀⣿⡇⠀⢸⣿⡇⠀⠀⠀⠀   ${final}
+${final}\n"
