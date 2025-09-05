@@ -31,7 +31,7 @@ function listar_discos() {
  fi
  DISKS="$disks"
  info "Discos disponíveis:"
- printf "${amarelo}7.${final} ${azul}Atualizar Lista ${final}\n"
+ printf "%s0.%s %sAtualizar Lista %s\n" "$amarelo" "$final" "$azul" "$final"
  local i=1
  local line
  while IFS= read -r line; do
@@ -129,7 +129,10 @@ function run_partprobe_or_fallback() {
  else
   aviso "partprobe/partx não disponíveis. Aguardar udev..."
  fi
- command -v udevadm >/dev/null 2>&1 && sudo udevadm settle &>/dev/null || true
+ #command -v udevadm >/dev/null 2>&1 && sudo udevadm settle &>/dev/null || true
+ if command -v udevadm >/dev/null 2>&1; then
+  sudo udevadm settle >/dev/null 2>&1 || true
+ fi
  local -i i=0 max=12
  while (( i < max )); do
   sleep 1
@@ -190,7 +193,14 @@ function montar_particao() {
  sudo mkdir -p "$PASTADATA" || aviso "pasta existente: $PASTADATA"
  AdicionarUuidAoFstab "$PARTICAO_SELECIONADA"
  sudo chown "${DEFAULT_ADMIN_USER}:${DEFAULT_ADMIN_GROUP}" "$PASTADATA" || aviso "Falha ao ajustar permissões"
- command -v systemctl >/dev/null 2>&1 && sudo systemctl daemon-reexec || aviso "Falha no daemon-reexec."
+ # command -v systemctl >/dev/null 2>&1 && sudo systemctl daemon-reexec || aviso "Falha no daemon-reexec."
+ if command -v systemctl >/dev/null 2>&1; then
+  if ! sudo systemctl daemon-reexec; then
+   aviso "Falha no daemon-reexec."
+  fi
+ else
+  aviso "systemctl não encontrado."
+ fi
  ok "Partição montada em $PASTADATA"
 }
 

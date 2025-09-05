@@ -8,7 +8,7 @@
 menu() {
  clear
  . banner/DontTrustVerify
- printf "%sRede: %s%s %s| %sInstance: %s%s\n" "$azul" "$verde" "$MAINORTESTNET" "$final" "$azul" "$verde" "$COREORKNOTS" "$final"
+ printf "%sRede: %s%s %s| %sInstance: %s%s%s\n" "$azul" "$verde" "$MAINORTESTNET" "$final" "$azul" "$verde" "$COREORKNOTS" "$final"
  printf "\n%s=====================================%s\n" "$azul" "$final"
  printf "%s     Menu de Configuração do Servidor\n%s" "$verde" "$final"
  printf "%s=====================================%s\n\n" "$azul" "$final"

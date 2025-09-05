@@ -158,7 +158,7 @@ case "$GESTOR_REDE" in
       NOVANETMASK="${NOVANETMASK:-$ESTENETMASK}"
       read -rp "Insira o gateway padrão ($ESTEGATEWAY): " NOVOGATEWAY
       NOVOGATEWAY="${NOVOGATEWAY:-$ESTEGATEWAY}"
-      read -p "Insira os servidores DNS ($ESTEDNS): " NOVODNS
+      read -rp "Insira os servidores DNS ($ESTEDNS): " NOVODNS
       NOVODNS="${NOVODNS:-$ESTEDNS}"
       if [[ -z "$NOVOIP" || -z "$NOVANETMASK" || -z "$NOVOGATEWAY" || -z "$NOVODNS" ]]; then
         aviso "Todos os campos são obrigatórios. Por favor, insira novamente os dados."
