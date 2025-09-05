@@ -36,7 +36,7 @@ while true; do
 #      fi
 #    done
       if confirmar "Deseja criar password para a nova chave SSH? (S/N): "; then
-        read -s -p "Senha para as chaves SSH: " SSHKEYPASSWORD
+        read -rsp "Senha para as chaves SSH: " SSHKEYPASSWORD
         echo
         info "Criando chaves SSH protegidas por senha..."
         sudo -u "$DEFAULT_ADMIN_USER" bash -c "printf '\n${SSHKEYPASSWORD}\n${SSHKEYPASSWORD}\n' | ssh-keygen -t rsa -b 2048 -f \"$HOME_ADMIN_USER/.ssh/id_rsa\""

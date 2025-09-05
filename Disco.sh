@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2154
 #------------------------------------------#
 #               DISCOS V0.3.0              #
 #------------------------------------------#
@@ -223,7 +224,11 @@ function main() {
   selecionar_particao || return 1
   if verificar_pastadata; then
    if confirmar "Deseja formatar esta partição? (S/N): "; then
-    format_particao && montar_particao || aviso "Operação interrompida."
+    if format_particao; then
+     montar_particao
+    else
+     aviso "Operação abortada."
+    fi
    else
     aviso "Operação interrompida."
    fi
@@ -231,7 +236,11 @@ function main() {
    local rc=$?
    if [[ $rc -eq 2 ]]; then
     if confirmar "Pasta 'bitcoin' encontrada. Deseja formatar? (S/N): "; then
-     format_particao && montar_particao || aviso "Operação abortada."
+     if format_particao; then
+     montar_particao
+    else
+     aviso "Operação abortada."
+    fi
     else
      aviso "Operação abortada. Adicionando e montando particao existente"
      montar_particao || return 1

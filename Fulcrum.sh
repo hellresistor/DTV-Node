@@ -37,24 +37,24 @@ function FulcrumZone(){
  esac
  #FULCRUMVERSAO="1.12.0"
  FULCRUMVERSAO=$(curl --silent "https://api.github.com/repos/cculianu/Fulcrum/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")' | sed 's/^v//')
- wget https://github.com/cculianu/Fulcrum/releases/download/v$FULCRUMVERSAO/Fulcrum-$FULCRUMVERSAO-$ESTEARCH-linux.tar.gz
- wget https://github.com/cculianu/Fulcrum/releases/download/v$FULCRUMVERSAO/Fulcrum-$FULCRUMVERSAO-shasums.txt.asc
- wget https://github.com/cculianu/Fulcrum/releases/download/v$FULCRUMVERSAO/Fulcrum-$FULCRUMVERSAO-shasums.txt
- if sha256sum --ignore-missing --check Fulcrum-$FULCRUMVERSAO-shasums.txt | grep -q ": OK"; then
+ wget "https://github.com/cculianu/Fulcrum/releases/download/v$FULCRUMVERSAO/Fulcrum-$FULCRUMVERSAO-$ESTEARCH-linux.tar.gz"
+ wget "https://github.com/cculianu/Fulcrum/releases/download/v$FULCRUMVERSAO/Fulcrum-$FULCRUMVERSAO-shasums.txt.asc"
+ wget "https://github.com/cculianu/Fulcrum/releases/download/v$FULCRUMVERSAO/Fulcrum-$FULCRUMVERSAO-shasums.txt"
+ if sha256sum --ignore-missing --check "Fulcrum-$FULCRUMVERSAO-shasums.txt" | grep -q ": OK"; then
   ok "Verificação SHA256 para Fulcrum-$FULCRUMVERSAO bem-sucedida."
  else
   erro "PROBLEMA A VERIFICAR A CHAVE SHA256 DE Fulcrum-$FULCRUMVERSAO-$ESTEARCH-linux.tar.gz"
  fi
  curl https://raw.githubusercontent.com/Electron-Cash/keys-n-hashes/master/pubkeys/calinkey.txt | gpg --import
  sleep 2
- if gpg --verify Fulcrum-$FULCRUMVERSAO-shasums.txt.asc | grep -q "Good signature from"; then
+ if gpg --verify "Fulcrum-$FULCRUMVERSAO-shasums.txt.asc" | grep -q "Good signature from"; then
   ok "Assinatura bitcoin SHA256SUMS.asc válida."
  else
   erro "Assinatura inválida. Instalacao interrompida!"
  fi
  # Instalar fulcrum
- tar -xzvf Fulcrum-$FULCRUMVERSAO-$ESTEARCH-linux.tar.gz
- sudo install -m 0755 -o root -g root -t /usr/local/bin Fulcrum-$FULCRUMVERSAO-$ESTEARCH-linux/Fulcrum Fulcrum-$FULCRUMVERSAO-$ESTEARCH-linux/FulcrumAdmin
+ tar -xzvf "Fulcrum-$FULCRUMVERSAO-$ESTEARCH-linux.tar.gz"
+ sudo install -m 0755 -o root -g root -t /usr/local/bin "Fulcrum-$FULCRUMVERSAO-$ESTEARCH-linux/Fulcrum" "Fulcrum-$FULCRUMVERSAO-$ESTEARCH-linux/FulcrumAdmin"
  # Apagar ficheiros de instalacao
  # sudo rm -r Fulcrum-$FULCRUMVERSAO-$ESTEARCH-linux Fulcrum-$FULCRUMVERSAO-$ESTEARCH-linux.tar.gz Fulcrum-$FULCRUMVERSAO-shasums.txt Fulcrum-$FULCRUMVERSAO-shasums.txt.asc
 }

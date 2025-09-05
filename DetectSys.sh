@@ -40,7 +40,7 @@ ok "Arquitectura $(uname -m) Detectado"
 
 ## Verificar o tamanho da paginacao ##
 PAGE_SIZE="$(getconf PAGE_SIZE)"
-if [[ "$PAGE_SIZE" > "4096" ]]; then
+if [[ "$PAGE_SIZE" -gt "4096" ]]; then
   if [ -f /boot/firmware/config.txt ]; then
     echo "[pi5]" | sudo tee -a /boot/firmware/config.txt
     echo "kernel=kernel8.img" | sudo tee -a /boot/firmware/config.txt
@@ -70,8 +70,8 @@ else
 fi
 
 ### Definir as definicoes de linguagem por-defeito ###
-grep -qxF 'export LC_ALL=C' ~/.bashrc || echo 'export LC_ALL=C' >> ~/.bashrc
-source ~/.bashrc
+grep -qxF 'export LC_ALL=C' /root/.bashrc || echo 'export LC_ALL=C' >> /root/.bashrc
+source /root/.bashrc
 
 CheckInstalarPacotes "sudo" "screen" "cmake" "jq" "bash-completion" "avahi-daemon" "qrencode" "hwinfo" "usbutils" "htop" "curl" "wget" "git" "hdparm" "dphys-swapfile" "apt-transport-https"
 
@@ -89,16 +89,16 @@ case "$GESTOR_REDE" in
       info "Netmask: $ESTENETMASK"
       info "Gateway: $ESTEGATEWAY"
       info "DNS: $ESTEDNS"
-      read -p 'Deseja configurar Rede Estatica? (S)im/(N)ao ' REDEESCOLHA
+      read -rp 'Deseja configurar Rede Estatica? (S)im/(N)ao ' REDEESCOLHA
       REDEESCOLHARESP=$(echo "$REDEESCOLHA" | tr '[:upper:]' '[:lower:]')
       if [ "$REDEESCOLHARESP" = "s" ]; then
-        read -p "Insira o IP estático ($ESTEIPINFO): " NOVOIP
+        read -rp "Insira o IP estático ($ESTEIPINFO): " NOVOIP
         NOVOIP="${NOVOIP:-$ESTEIPINFO}"
-        read -p "Insira a máscara de rede ($ESTENETMASK): " NOVANETMASK
+        read -rp "Insira a máscara de rede ($ESTENETMASK): " NOVANETMASK
         NOVANETMASK="${NOVANETMASK:-$ESTENETMASK}"
-        read -p "Insira o gateway padrão ($ESTEGATEWAY): " NOVOGATEWAY
+        read -rp "Insira o gateway padrão ($ESTEGATEWAY): " NOVOGATEWAY
         NOVOGATEWAY="${NOVOGATEWAY:-$ESTEGATEWAY}"
-        read -p "Insira os servidores DNS ($ESTEDNS): " NOVODNS
+        read -rp "Insira os servidores DNS ($ESTEDNS): " NOVODNS
         NOVODNS="${NOVODNS:-$ESTEDNS}"
         if [[ -z "$NOVOIP" || -z "$NOVANETMASK" || -z "$NOVOGATEWAY" || -z "$NOVODNS" ]]; then
           aviso "Todos os campos são obrigatórios. Por favor, insira novamente os dados."
@@ -148,15 +148,15 @@ case "$GESTOR_REDE" in
     info "Gateway: $ESTEGATEWAY"
     info "DNS: $ESTEDNS"
 
-    read -p 'Deseja configurar Rede Estatica? (S)im/(N)ao ' REDEESCOLHA
-    REDEESCOLHARESP=$(echo "$REDEESCOLHA" | tr '[:upper:]' '[:lower:]')
+    read -rp 'Deseja configurar Rede Estatica? (S)im/(N)ao ' REDEESCOLHA
+    REDEESCOLHARESP="$(echo "$REDEESCOLHA" | tr '[:upper:]' '[:lower:]')"
 
     if [ "$REDEESCOLHARESP" = "s" ]; then
-      read -p "Insira o IP estático ($ESTEIPINFO): " NOVOIP
+      read -rp "Insira o IP estático ($ESTEIPINFO): " NOVOIP
       NOVOIP="${NOVOIP:-$ESTEIPINFO}"
-      read -p "Insira a máscara de rede ($ESTENETMASK): " NOVANETMASK
+      read -rp "Insira a máscara de rede ($ESTENETMASK): " NOVANETMASK
       NOVANETMASK="${NOVANETMASK:-$ESTENETMASK}"
-      read -p "Insira o gateway padrão ($ESTEGATEWAY): " NOVOGATEWAY
+      read -rp "Insira o gateway padrão ($ESTEGATEWAY): " NOVOGATEWAY
       NOVOGATEWAY="${NOVOGATEWAY:-$ESTEGATEWAY}"
       read -p "Insira os servidores DNS ($ESTEDNS): " NOVODNS
       NOVODNS="${NOVODNS:-$ESTEDNS}"
@@ -177,7 +177,7 @@ case "$GESTOR_REDE" in
         continue
       fi
       info "Aplicando configuração de rede estática no /etc/network/interfaces..."
-      cat <<EOF > /etc/network/interfaces.d/$ESTEINTERFACE
+      cat <<EOF > "/etc/network/interfaces.d/$ESTEINTERFACE"
 auto $ESTEINTERFACE
 iface $ESTEINTERFACE inet static
     address $NOVOIP

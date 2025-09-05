@@ -13,7 +13,7 @@ function RequisitosMempool(){
   NPMCURRENT=$(npm -v)
   if [ "$(printf '%s\n%s' "$NPMLATEST" "$NPMCURRENT" | sort -V | tail -n1)" != "$NPMCURRENT" ]; then
    aviso "Nova versão do npm disponível: $NPMCURRENT → $NPMLATEST"
-   sudo npm install -g npm@$NPMLATEST
+   sudo npm install -g npm@"$NPMLATEST"
   else
    ok "npm já está atualizado ($NPMCURRENT)"
   fi
@@ -391,8 +391,8 @@ fi
 clear
 . banner/MEMPOOL
 sleep 4
-screenSessionCheck "${DEFAULT_ADMIN_USER}" "session_${DEFAULT_ADMIN_USER}" "RequisitosMempool" ;;
-screenSessionCheck "${DEFAULT_MEMPOOL_USER}" "session_${DEFAULT_MEMPOOL_USER}" "DownloadMempool" ;;
-screenSessionCheck "${DEFAULT_MEMPOOL_USER}" "session_${DEFAULT_MEMPOOL_USER}" "BackendMempool" ;;
-screenSessionCheck "${DEFAULT_MEMPOOL_USER}" "session_${DEFAULT_MEMPOOL_USER}" "FrontendMempool" ;;
-screenSessionCheck "${DEFAULT_ADMIN_USER}" "session_${DEFAULT_ADMIN_USER}" "ConfigMempool" ;;
+screenSessionCheck "${DEFAULT_ADMIN_USER}" "session_${DEFAULT_ADMIN_USER}" "RequisitosMempool"
+screenSessionCheck "${DEFAULT_MEMPOOL_USER}" "session_${DEFAULT_MEMPOOL_USER}" "DownloadMempool"
+screenSessionCheck "${DEFAULT_MEMPOOL_USER}" "session_${DEFAULT_MEMPOOL_USER}" "BackendMempool"
+screenSessionCheck "${DEFAULT_MEMPOOL_USER}" "session_${DEFAULT_MEMPOOL_USER}" "FrontendMempool"
+screenSessionCheck "${DEFAULT_ADMIN_USER}" "session_${DEFAULT_ADMIN_USER}" "ConfigMempool"
